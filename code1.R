@@ -11,6 +11,7 @@ library(shiny)
 library(dplyr)
 library(ggplot2)
 library(gtools)
+library(shinyWidgets)
 
 
 # Funciones ---------------------------------------------------------------
@@ -28,7 +29,7 @@ UCL3 <- function(n, p, alpha){
 
 # Función para gráficar la carta ------------------------------------------
 
-T2plot <- function(x,y, alpha1 = 0.05, alpha2 = 0.05){
+T2plot <- function(x,y, alpha1 = 0.05, alpha2 = 0.05,session){
   
   # Vector de medias del HDS
   xmedia <- apply(x, 2, mean)
@@ -76,7 +77,17 @@ T2plot <- function(x,y, alpha1 = 0.05, alpha2 = 0.05){
     temp <- ifelse(T2[i] > UCLd, 4, 1)
     tcol <- ifelse(T2[i] > UCLd, 2, 1)
     points(obs[i], T2[i], pch = temp, col = tcol)
-    if(T2[i]>UCLd) text(i, T2[i], labels = paste(i), pos = 3, font = 2, cex = 0.7)
+    if(T2[i]>UCLd) {
+      text(i, T2[i], labels = paste(i), pos = 3, font = 2, cex = 0.7)
+      
+      sendSweetAlert(
+        session = session,
+        title = "Advertencia",
+        text = "Alguno de sus datos historicos está fuera de control",
+        type = "warning"
+      )
+      
+      }
   }
   señales <- c()
   for (i in (m+1):(m+k)) {
@@ -116,10 +127,18 @@ T2info <- function(x,y, alpha1 = 0.05, alpha2 = 0.05){
   señales <- c()
   for (i in (m+1):(m+k)) {
     if(T2[i]>UCLn) señales <- c(señales, i)
+    
   }
-  resultados <- list(Medias = xmedia, Covarianzas = vars, T2 = T2, Observaciones = (m+k), Señales = (señales-m))
+  resultadosHDS <- list(Medias = xmedia, Covarianzas = vars, Observaciones = m, T2 = t2)
+  resultadosND <- list(Observaciones = k, T2 = t2n, Señales = señales-m)
+  resultados <- list(ResultadosHDS = resultadosHDS, ResultadosND = resultadosND)
   return(resultados)
 }
+
+
+
+
+
 # Método MYT --------------------------------------------------------------
 MYT <- function(dat, HSD, alpha = 0.05){
   
@@ -147,7 +166,7 @@ MYT <- function(dat, HSD, alpha = 0.05){
   T2<-mahalanobis(dat,center=X,cov=S)
   
   # Vector de indices de las alarmas
-  alarma <- T2info(HSD, dat, alpha)$Señales
+  alarma <- T2info(HSD, dat, alpha2 = alpha)[[2]]$Señales
   
   
   for(j in alarma){
@@ -303,7 +322,7 @@ Murphy <- function(dat, HSD, alpha = 0.05){
   T2<-mahalanobis(dat,center=X,cov=S)
   
   # Vector de indices de las alarmas
-  alarma <- T2info(HSD, dat, alpha)$Señales
+  alarma <- T2info(HSD, dat, alpha2 = alpha)[[2]]$Señales
   
   for (j in alarma){
     print(paste0("Para la observación ",j))
@@ -392,7 +411,7 @@ DFT <- function(dat, HSD, alpha = 0.05, Ksim = 0.8){
   T2<-mahalanobis(dat,center=X,cov=S)
   
   # Vector de indices de las alarmas
-  alarma <- T2info(HSD, dat, alpha)$Señales
+  alarma <- T2info(HSD, dat, alpha2 = alpha)[[2]]$Señales
   
   #Para todos los casos de alarma
   for(j in alarma){
@@ -409,21 +428,31 @@ DFT <- function(dat, HSD, alpha = 0.05, Ksim = 0.8){
     #Significancia de bonferroni
     Kbonf=(p+Ksim-1)/p
     #color=ifelse(as.vector(Kind>Kbonf),"red","white")
-    Diagnóstico=ifelse(as.vector(Kind>Kbonf),"Variable altamente sospechosa","")
+    diagnostico=ifelse(as.vector(Kind>Kbonf),"Variable sospechosa","")
+    culpables<-NULL
+    contador=1
+    for( i in 1:length(diagnostico) ){
+      if(diagnostico[i]=="Variable sospechosa"){
+        culpables[contador]<-i
+        contador=contador+1
+      }
+    }
     
     #par(mar=c(5.1, 4.1, 4.1, 2.1))
     #barplot(Kind,space=0,names.arg=1:p,col=color,ylim=c(0,max(Kind)+0.3),xlab="i",ylab=expression(K[ind]))
     #legend("topleft","Variables altamente sospechosas",col=2,pch=15,bty="n",pt.cex=2)
     
     #Matriz con los resultados
-    res=data.frame(t,Kind,Kbonf,Diagnóstico)
-    
-    cat("Nivel de confianza nominal",alpha, "\n")
+    #res=data.frame(t,Kind,Kbonf,diagnostico)
+    res=data.frame(t,Kind,Kbonf)
+    cat("Nivel de confianza nominal",1-alpha, "\n")
     cat("Nivel de confianza simultáneo ",Ksim, "\n")
     #cat("UCL=",UCL, "\n")
     #cat("Estadístico T2=",T2[j], "\n")
     cat("\n")
     print(res)
+    print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(colnames(dat)[sort(culpables)] ,collapse=",") ) )
+    cat("\n")
   }
 }
 
@@ -441,14 +470,22 @@ ui <- fluidPage(
     
     # Panel para las entradas del usuario
     sidebarPanel(
+      useSweetAlert(),
       
       fluidRow(
         #column(7,img(src="logo_u.png", height="100%", width="100%")),
         column(7,img(src="escudo.png", height="100%", width="100%")),
-        column(4,tags$p(tags$p(""),align="left")) ),
+        column(4,
+               switchInput(
+                 inputId = "calcular",
+                 size = "mini",
+                 label = "Calcular"
+               ) )
+               ),
         
         
-      
+      conditionalPanel("input.calcular==false",#se abre el menu para leer datos
+                       
       h3("Subir datos históricos"),
       
       p("Seleccione el archivo con el conjunto de datos histórico. 
@@ -516,8 +553,11 @@ ui <- fluidPage(
                              selected=",")
         )
         
-      ),
+      )#,
+      ),#Final condicional desplegar menu
       
+      
+      conditionalPanel("input.calcular==true",#se abre el menu para las funciones
       # Nivel de significancia
       numericInput(inputId = "alpha1", label = "Significancia historicos", value = 0.05, min = 0, max = 1, step = 0.01),
       
@@ -527,22 +567,29 @@ ui <- fluidPage(
       checkboxGroupInput(inputId = "resultados", label = "Resultados deseados",
                          choices = c("Resumen numérico", "MYT", "Murphy", "DFT"), selected = NULL)
       
+      )#FInal del condicional 2
       
-    ),
+      
+    ),#Final del panel izquierdo
     
     
     
     # Salida de resultados
     mainPanel(
-      
+      conditionalPanel("input.calcular==false",
       tableOutput("contents1"),
-      tableOutput("contents2"),
+      tableOutput("contents2") 
+      ),#Final condicional 1
+      
+      
+      conditionalPanel("input.calcular==true",
       # Gráfico de la carta T2 datos históricos
       plotOutput(outputId = "cartaT2"),
       
       
       # Resumen numérico
       verbatimTextOutput(outputId = "resumen")
+      )#Final condicional 2
     )
     
   )
@@ -594,7 +641,7 @@ server <- function(input, output, session) {
   
     # Gráfico de la T2 del HDS
   output$cartaT2 <- renderPlot({
-    T2plot(datos(), nuevos(), input$alpha1, input$alpha2)
+    T2plot(datos(), nuevos(), input$alpha1, input$alpha2,session)
   })
   
  
@@ -605,6 +652,8 @@ server <- function(input, output, session) {
       print("------------------Resumen numérico de las observaciones---------------")
       print(T2info(datos(), nuevos(), input$alpha1, input$alpha2), row.names = FALSE)
     }
+    
+    
     if("MYT" %in% input$resultados){
       MYT(nuevos(), datos(), alpha = input$alpha2)
     }
