@@ -28,7 +28,7 @@ UCL3 <- function(n, p, alpha){
 
 # Función para gráficar la carta ------------------------------------------
 
-T2plot <- function(x,y, alpha = 0.05){
+T2plot <- function(x,y, alpha1 = 0.05, alpha2 = 0.05){
   
   # Vector de medias del HDS
   xmedia <- apply(x, 2, mean)
@@ -58,46 +58,47 @@ T2plot <- function(x,y, alpha = 0.05){
   k <- nrow(y)
   
   # UCL del HDS
-  UCLd <- UCL2(m = m, p = p, alpha = alpha)
+  UCLd <- UCL2(m = m, p = p, alpha = alpha1)
   
   # UCL de los nuevos registros
-  UCLn <- UCL3(m, p, alpha)
+  UCLn <- UCL3(m, p, alpha2)
   
   # Instrucciones grágicas
   obs <- c(1:(m+k))
   maxt <- max(T2)
   plot(obs, T2, type = "l", xlim = c(0, m + k + 2), ylim = c(0, max((UCLd+2),(UCLn + 2), (maxt + 2))),
-       main = expression("Carta"*~T^2), 
-       ylab = expression(T^2), xlab = "No. Observación", font = 2)
-  abline(h = UCLd, lty = 3, col = "red")
-  abline(h = UCLn, lty = 3, col = "red")
+       main = expression("Carta"*~T^2),
+       ylab = expression(T ^2), xlab = "No. Observación", font = 2, las = 1)
+  segments(x0 = 0, y0 = UCLd, x1 = m+0.5, y1 = UCLd, col = "red", lty = 3)
+  segments(x0 = m+0.5, y0 = UCLn, x1 = m+k+1, y1 = UCLn, col = "red", lty = 3)
   abline(v = m+0.5,lty = 3, col = "blue" )
   for (i in 1:m) {
     temp <- ifelse(T2[i] > UCLd, 4, 1)
-    tcol <- ifelse(T2[i] > UCLd, 3, 1)
+    tcol <- ifelse(T2[i] > UCLd, 2, 1)
     points(obs[i], T2[i], pch = temp, col = tcol)
-    if(T2[i]>UCLd) text(i, T2[i], labels = paste("Obs = ", i), pos = 3, font = 2, cex = 0.7)
+    if(T2[i]>UCLd) text(i, T2[i], labels = paste(i), pos = 3, font = 2, cex = 0.7)
   }
   señales <- c()
   for (i in (m+1):(m+k)) {
     temp <- ifelse(T2[i] > UCLn, 8, 5)
-    tcol <- ifelse(T2[i] > UCLn, 3, 1)
+    tcol <- ifelse(T2[i] > UCLn, 2, 1)
     points(obs[i], T2[i], pch = temp, col = tcol)
-    if(T2[i]>UCLn) text(i, T2[i], labels = paste("Obs = ", i), pos = 3, font = 2, cex = 0.7)
+    if(T2[i]>UCLn) text(i, T2[i], labels = paste(i-m), pos = 3, font = 2, cex = 0.7)
     if(T2[i]>UCLn) señales <- c(señales, i)
   }
-  text((max(obs)),UCLd,paste("UCL HDS = ",round(UCLd,digits=4)),pos=3,font=2,cex=0.7)
-  text((max(obs)),UCLn,paste("UCL ND = ",round(UCLn,digits=4)),pos=3,font=2,cex=0.7)
   text(m+0.5,0,paste("Fin HDS"),pos=3,font=2,cex=0.7)
-  legend("topleft",c(paste("p=",p),paste("alpha=",alpha),paste("Datos históricos: ",m), paste("Nuevos datos: "),k)
-         ,ncol=3,cex=0.7,bg="gray95")
+  legend("topleft",c(paste("Datos históricos: ",m),
+                     paste("Nuevos datos: ", k),
+                     paste("UCL HDS:", round(UCLd, 2)),
+                     paste("UCL nuevos datos:", round(UCLn, 2)))
+         ,ncol=3,cex=1,bg="transparent", box.col = "transparent")
   
 }
 
 
 # Función del resumen numérico --------------------------------------------
 
-T2info <- function(x,y, alpha = 0.05){
+T2info <- function(x,y, alpha1 = 0.05, alpha2 = 0.05){
   
   xmedia <- apply(x, 2, mean)
   vars <- var(x)
@@ -109,8 +110,8 @@ T2info <- function(x,y, alpha = 0.05){
   p <- dimen[2]
   n <- 1
   k <- nrow(y)
-  UCLd <- UCL2(m = m, p = p, alpha = alpha)
-  UCLn <- UCL3(m, p, alpha)
+  UCLd <- UCL2(m = m, p = p, alpha = alpha1)
+  UCLn <- UCL3(m, p, alpha2)
   obs <- c(1:(m+k))
   señales <- c()
   for (i in (m+1):(m+k)) {
@@ -119,7 +120,6 @@ T2info <- function(x,y, alpha = 0.05){
   resultados <- list(Medias = xmedia, Covarianzas = vars, T2 = T2, Observaciones = (m+k), Señales = (señales-m))
   return(resultados)
 }
-
 # Método MYT --------------------------------------------------------------
 MYT <- function(dat, HSD, alpha = 0.05){
   
@@ -269,7 +269,8 @@ MYT <- function(dat, HSD, alpha = 0.05){
     
     # Se imprimen los resultados para cada alarma encontrada
     print(round(tabla,3))
-    print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(culpables ,collapse=",") ) )
+    #print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(culpables ,collapse=",") ) )
+    print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(colnames(dat)[sort(culpables)] ,collapse=",") ) )
     cat("\n","")
   }
 }
@@ -359,7 +360,7 @@ Murphy <- function(dat, HSD, alpha = 0.05){
       
     }
     print(round(tabla,3))
-    print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(colnames(dat)[culpables] ,collapse=",") ) )
+    print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(colnames(dat)[sort(culpables)] ,collapse=",") ) )
     cat("\n","")
   }
 }
@@ -441,6 +442,13 @@ ui <- fluidPage(
     # Panel para las entradas del usuario
     sidebarPanel(
       
+      fluidRow(
+        #column(7,img(src="logo_u.png", height="100%", width="100%")),
+        column(7,img(src="escudo.png", height="100%", width="100%")),
+        column(4,tags$p(tags$p(""),align="left")) ),
+        
+        
+      
       h3("Subir datos históricos"),
       
       p("Seleccione el archivo con el conjunto de datos histórico. 
@@ -456,6 +464,23 @@ ui <- fluidPage(
       
       # Encabezado
       checkboxInput(inputId = "header1", label = "Encabezado", value = TRUE),
+      fluidRow(
+        
+        #Pregunta el tipo de separador de los datos
+        column(6,selectInput("sep1", "Separador",width = "100%",
+                             choices = c("Coma" = ",",
+                                         "Punto coma" = ";",
+                                         "Tabular" = "\t"),
+                             selected = ",")
+        ),
+        #Pregunta el tipo de decimal usado en los datos
+        column(5,selectInput("dec1","Decimal",width = "100%",
+                             choices = c("Punto"=".",
+                                         "Coma"=","),
+                             selected=",")
+        )
+        
+      ),
       
       h3("Subir nuevos registros"),
       
@@ -470,21 +495,48 @@ ui <- fluidPage(
                   "text/comma-separated-values,text/plain",
                   ".csv")),
       
+      
+      
+      
       # Encabezado
       checkboxInput(inputId = "header2", label = "Encabezado", value = FALSE),
+      fluidRow(
+        
+        #Pregunta el tipo de separador de los datos
+        column(6,selectInput("sep2", "Separador",width = "100%",
+                             choices = c("Coma" = ",",
+                                         "Punto coma" = ";",
+                                         "Tabular" = "\t"),
+                             selected = ",")
+        ),
+        #Pregunta el tipo de decimal usado en los datos
+        column(5,selectInput("dec2","Decimal",width = "100%",
+                             choices = c("Punto"=".",
+                                         "Coma"=","),
+                             selected=",")
+        )
+        
+      ),
       
       # Nivel de significancia
-      numericInput(inputId = "alpha", label = "Significancia", value = 0.05, min = 0, max = 1, step = 0.01),
+      numericInput(inputId = "alpha1", label = "Significancia historicos", value = 0.05, min = 0, max = 1, step = 0.01),
+      
+      numericInput(inputId = "alpha2", label = "Significancia nuevos", value = 0.05, min = 0, max = 1, step = 0.01),
       
       # Selección de resultados
       checkboxGroupInput(inputId = "resultados", label = "Resultados deseados",
                          choices = c("Resumen numérico", "MYT", "Murphy", "DFT"), selected = NULL)
       
+      
     ),
+    
+    
     
     # Salida de resultados
     mainPanel(
       
+      tableOutput("contents1"),
+      tableOutput("contents2"),
       # Gráfico de la carta T2 datos históricos
       plotOutput(outputId = "cartaT2"),
       
@@ -497,8 +549,11 @@ ui <- fluidPage(
   
 )
 
+# Servidor ----------------------------------------------------------------
 
 server <- function(input, output, session) {
+
+
   
   # Objeto reactivo de los datos históricos
   datos <- reactive({
@@ -509,7 +564,8 @@ server <- function(input, output, session) {
     if (is.null(inFile))
       return(NULL)
     
-    read.csv2(inFile$datapath, header = input$header1)
+    read.table(inFile$datapath, header = input$header1,
+    sep = input$sep1,dec = input$dec1)
   })
   
   # Objeto reactivo de los nuevos registros
@@ -521,12 +577,24 @@ server <- function(input, output, session) {
     if (is.null(inFile))
       return(NULL)
     
-    read.csv2(inFile$datapath, header = input$header2)
+    read.table(inFile$datapath, header = input$header2,
+               sep = input$sep2,dec = input$dec2)
+    
+    
+  })
+  
+  output$contents1 <- renderTable({
+    
+    head(datos())
+  })
+  output$contents2 <- renderTable({
+    
+    head(nuevos())
   })
   
     # Gráfico de la T2 del HDS
   output$cartaT2 <- renderPlot({
-    T2plot(datos(), nuevos(), input$alpha)
+    T2plot(datos(), nuevos(), input$alpha1, input$alpha2)
   })
   
  
@@ -535,16 +603,16 @@ server <- function(input, output, session) {
     req(input$resultados)
     if("Resumen numérico" %in% input$resultados){
       print("------------------Resumen numérico de las observaciones---------------")
-      print(T2info(datos(), nuevos(), input$alpha), row.names = FALSE)
+      print(T2info(datos(), nuevos(), input$alpha1, input$alpha2), row.names = FALSE)
     }
     if("MYT" %in% input$resultados){
-      MYT(nuevos(), datos(), alpha = input$alpha)
+      MYT(nuevos(), datos(), alpha = input$alpha2)
     }
     if("Murphy" %in% input$resultados){
-      Murphy(nuevos(), datos(), alpha = input$alpha)
+      Murphy(nuevos(), datos(), alpha = input$alpha2)
     }
     if("DFT" %in% input$resultados){
-      DFT(nuevos(), datos(), alpha = input$alpha)
+      DFT(nuevos(), datos(), alpha = input$alpha2)
     }
   })
   
