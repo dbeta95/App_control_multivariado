@@ -1,4 +1,6 @@
 # Daniel Betancur
+# Brahian Cano
+# Yeison Yovanny Ocampo
 # Estudiante de estadística universidad nacional
 # Fecha: 7/09/2019
 
