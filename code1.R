@@ -14,14 +14,14 @@ library(dplyr)
 library(ggplot2)
 library(gtools)
 library(shinyWidgets)
-
+library(shinythemes)
 
 
 
 # Interfaz del usuario ----------------------------------------------------
 
 
-ui <- fluidPage(
+ui <- fluidPage(theme = shinytheme("lumen"),
   
   # Título
   titlePanel("Carta de Control Multivariada"),
@@ -33,15 +33,19 @@ ui <- fluidPage(
     sidebarPanel(
       #Función para generar alertas deacuerdo una condición
       useSweetAlert(),
+      #shinythemes::themeSelector(),
       
       fluidRow(
         #Logo de la universidad y botón para hacer los cálculos
-        column(7,img(src="escudo.png", height="100%", width="100%")),
+        column(6,img(src="escudo.png", height="100%", width="100%")),
         column(4,
                switchInput(
                  inputId = "calcular",
-                 size = "mini",
-                 label = "Calcular"
+                 size = "small",
+                 label = "Calcular",
+                 width="100%",
+                 #onStatus = "information", 
+                 offStatus = "danger"
                ) )
                ),
         
@@ -50,12 +54,11 @@ ui <- fluidPage(
                        
       h3("Subir datos históricos"),
       
-      p("Seleccione el archivo con el conjunto de datos histórico. 
-        Recuerde que este debe estar en",
-        span("formato .csv o .txt ", style = "color:blue")) ,
+      p("Seleccione sus datos historicos en",
+        span("formato .csv ó .txt ", style = "color:#2FA4E7")) ,
       
       # Entrada de datos
-      fileInput(inputId = "HDS", label = "Elegir archivo CVS",
+      fileInput(inputId = "HDS", label = NULL, buttonLabel = "Explorar..",
                 accept = c(
                   "text/csv",
                   "text/comma-separated-values,text/plain",
@@ -84,12 +87,11 @@ ui <- fluidPage(
       #Menú para los nuevos registros (Fase 2)
       h3("Subir nuevos registros"),
       
-      p("Seleccione el archivo con el conjunto de nuevos registros. 
-        Recuerde que este debe estar en",
-        span("formato .csv o .txt", style = "color:blue")),
+      p("Seleccione sus nuevos registros en",
+        span("formato .csv ó .txt", style = "color:#2FA4E7")),
       
       # Entrada de datos
-      fileInput(inputId = "NR", label = "Elegir archivo CVS",
+      fileInput(inputId = "NR", label =NULL, buttonLabel = "Explorar..",
                 accept = c(
                   "text/csv",
                   "text/comma-separated-values,text/plain",
@@ -131,8 +133,20 @@ ui <- fluidPage(
       checkboxGroupInput(inputId = "resultados", label = "Resultados deseados",
                          choices = c("Resumen numérico", "MYT", "Murphy", "DFT"), selected = NULL)
       
-      )#FInal del condicional 2
+      ),#FInal del condicional 2
+      tags$hr(size=20,style="border-color: #000000;"),
       
+      tags$p("Autores:"),
+      tags$ul(
+        tags$li(tags$a(href="mailto:bcanou@unal.edu.co", "Brahian Cano Urrego")),
+        tags$li(tags$a(href="mailto:yyocampon@unal.edu.co", "Yeison Y. Ocampo Naranjo")),
+        tags$li(tags$a(href="mailto:dbetancurro@unal.edu.co", "Daniel Betancur Rodriguez"))
+      ),
+      tags$p("Profesores:"),
+      tags$ul(
+        tags$li(tags$a(href="mailto:ngonzale@unal.edu.co", "Nelfy G. Gonzales Alvarez")),
+        tags$li(tags$a(href="mailto:iscramirezgu@unal.edu.co", "Isabel C. Ramirez Guzman"))
+      )
       
     ),#Final del panel izquierdo
     
@@ -237,10 +251,10 @@ server <- function(input, output, session) {
          ylab = expression(T ^2), xlab = "No. Observación", font = 2, las = 1)
     segments(x0 = 0, y0 = UCLd, x1 = m+0.5, y1 = UCLd, col = "red", lty = 3)
     segments(x0 = m+0.5, y0 = UCLn, x1 = m+k+1, y1 = UCLn, col = "red", lty = 3)
-    abline(v = m+0.5,lty = 3, col = "blue" )
+    abline(v = m+0.5,lty = 3, col = "blue",lwd=2.5 )
     for (i in 1:m) {
-      temp <- ifelse(T2[i] > UCLd, 4, 1)
-      tcol <- ifelse(T2[i] > UCLd, 2, 1)
+      temp <- ifelse(T2[i] > UCLd, 19, 20)
+      tcol <- ifelse(T2[i] > UCLd, "red", "black")
       points(obs[i], T2[i], pch = temp, col = tcol)
       if(T2[i]>UCLd) {
         text(i, T2[i], labels = paste(i), pos = 3, font = 2, cex = 0.7)
@@ -257,13 +271,13 @@ server <- function(input, output, session) {
     }
     señales <- c()
     for (i in (m+1):(m+k)) {
-      temp <- ifelse(T2[i] > UCLn, 8, 5)
-      tcol <- ifelse(T2[i] > UCLn, 2, 1)
+      temp <- ifelse(T2[i] > UCLn, 19, 20)
+      tcol <- ifelse(T2[i] > UCLn, "red", "black")
       points(obs[i], T2[i], pch = temp, col = tcol)
       if(T2[i]>UCLn) text(i, T2[i], labels = paste(i-m), pos = 3, font = 2, cex = 0.7)
       if(T2[i]>UCLn) señales <- c(señales, i)
     }
-    text(m+0.5,0,paste("Fin HDS"),pos=3,font=2,cex=0.7)
+    #text(m+0.5,0,paste("Fin HDS"),pos=3,font=2,cex=0.7)
     legend("topleft",c(paste("Datos históricos: ",m),
                        paste("Nuevos datos: ", k),
                        paste("UCL HDS:", round(UCLd, 2)),
@@ -334,13 +348,14 @@ server <- function(input, output, session) {
     # Vector de indices de las alarmas
     alarma <- T2info(HSD, dat, alpha2 = alpha)[[2]]$Señales
     
+    #listas para almacenar las salidas necesarias de la función
     tablas_myt<-list()
     culp_myt<-list()
     cont<- 1
     
     for(j in alarma){
       
-      
+      #Obtiene las observaciones en alarma 
       local({
         my_i <- j
         obsname <- paste("obs_myt", my_i, sep="")
@@ -469,31 +484,11 @@ server <- function(input, output, session) {
         
       }
       
-      
+      #Se almacenan la tabla y los culpables para esta alarma
       
       tablas_myt[[cont]]<-round(tabla,3)
       culp_myt[[cont]]<-culpables
       cont<-cont+1
-      # local({
-      # 
-      #   #my_j <- j
-      #   tablename <- paste("table_myt", j, sep="")
-      #   
-      #   output[[tablename]] <- renderTable({
-      #     round(tabla,3)
-      #     
-      #   })
-      # })
-      
-      # local({
-      #   my_i <- j
-      #   textname <- paste("text_myt", my_i, sep="")
-      #   
-      #   output[[textname]] <- renderPrint({
-      #     print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(colnames(dat)[sort(culpables)] ,collapse=",") ) )
-      #     
-      #   })
-      # })
       
       
       
@@ -502,6 +497,7 @@ server <- function(input, output, session) {
       print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(colnames(dat)[sort(culpables)] ,collapse=",") ) )
       cat("\n","")
     }
+    #Todas las tablas y culpables para cada alarmas están aqui
     return(list(tablas_myt,culp_myt) )
   }
   
@@ -532,7 +528,7 @@ server <- function(input, output, session) {
     # Cálculo del T2 para cada vector de observaciones
     T2<-mahalanobis(dat,center=X,cov=S)
     
-    
+    #Listas para almacenar las salidas
     tablas_mur<-list()
     culp_mur<-list()
     cont<- 1
@@ -540,8 +536,10 @@ server <- function(input, output, session) {
     # Vector de indices de las alarmas
     alarma <- T2info(HSD, dat, alpha2 = alpha)[[2]]$Señales
     
+    
     for (j in alarma){
       
+      #Se guardan las alarmas para su posterior uso
       local({
         my_i <- j
         obsname <- paste("obs_mur", my_i, sep="")
@@ -607,7 +605,7 @@ server <- function(input, output, session) {
         
       }
       
-      
+      # Se almacenan la tabla y los culpables para esta alarma
       tablas_mur[[cont]]<-round(tabla,3)
       culp_mur[[cont]]<-culpables
       cont<-cont+1
@@ -617,7 +615,7 @@ server <- function(input, output, session) {
       print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(colnames(dat)[sort(culpables)] ,collapse=",") ) )
       cat("\n","")
     }
-    
+    #Todas las tablas y culpables para cada alarmas están aqui
     return(list(tablas_mur,culp_mur) )
   }
   
@@ -650,7 +648,7 @@ server <- function(input, output, session) {
     # Vector de indices de las alarmas
     alarma <- T2info(HSD, dat, alpha2 = alpha)[[2]]$Señales
     
-    
+    #Listas para almacenar las salidas
     tablas_dft<-list()
     culp_dft<-list()
     cont<- 1
@@ -673,34 +671,22 @@ server <- function(input, output, session) {
       
       #Significancia de bonferroni
       Kbonf=(p+Ksim-1)/p
-      #color=ifelse(as.vector(Kind>Kbonf),"red","white")
+      
       diagnostico=ifelse(as.vector(Kind>Kbonf),"Variable sospechosa","no")
-      #culpables<-NULL
-      #conta=1
       
+      #Los culpables para la alarma son estos
       culpables=which(diagnostico!="no")
-      ###peligrooooooooooooooooooooooooooooooo
-      # for( i in 1:length(diagnostico) ){
-      #   if(diagnostico[i]=="Variable sospechosa"){
-      #     #culpables[conta]<-i
-      #     #conta=conta+1
-      #     
-      #   }
-      # }
-      
-      #par(mar=c(5.1, 4.1, 4.1, 2.1))
-      #barplot(Kind,space=0,names.arg=1:p,col=color,ylim=c(0,max(Kind)+0.3),xlab="i",ylab=expression(K[ind]))
-      #legend("topleft","Variables altamente sospechosas",col=2,pch=15,bty="n",pt.cex=2)
-      
-      #Matriz con los resultados
-      #res=data.frame(t,Kind,Kbonf,diagnostico)
+     
+      #Tabla con los resultados
       res=data.frame(t,Kind,Kbonf)
       
       
+      #Se almacenan para la posteridad
       tablas_dft[[cont]]<-round(res,3)
       culp_dft[[cont]]<-culpables
       cont<-cont+1
       
+      #Se almacena el numero de la alarma con su mensaje 
       local({
         my_i <- j
         obsname <- paste("obs_dft", my_i, sep="")
@@ -719,13 +705,12 @@ server <- function(input, output, session) {
 
       cat("Nivel de confianza nominal",1-alpha, "\n")
       cat("Nivel de confianza simultáneo ",Ksim, "\n")
-      #cat("UCL=",UCL, "\n")
-      #cat("Estadístico T2=",T2[j], "\n")
       cat("\n")
       print(res)
       print(paste0("Las variables a las cuales se debe la alarma son: ",paste0(colnames(dat)[sort(culpables)] ,collapse=",") ) )
       cat("\n")
     }
+    #Todas las tablas y culpables para cada alarmas están aqui
     return(list(tablas_dft,culp_dft) )
   }
   
@@ -733,7 +718,7 @@ server <- function(input, output, session) {
 
 # Salidas  ----------------------------------------------------------------
 
-#Textos de uso de lafunción
+#Textos para saber a que función corresponden las salidas
   output$t1 <- renderText({
     if("MYT" %in% input$resultados){
     print("--------------------------Método MYT-----------------------------")
@@ -825,15 +810,22 @@ server <- function(input, output, session) {
   #Se crean los outputs de myt teniendo las funciones en una lista la salida de la función
   output$table <- renderUI({
     
+    #Verifica para el caso de MYT
     if("MYT" %in% input$resultados){
+    #Indice de las alarmas
     alarmas<-T2info(datos(), nuevos(), input$alpha1, input$alpha2)[[2]]$Señales 
+    #Resultados de la función
     lista_final<-MYT(nuevos(), datos(), alpha = input$alpha2)
     
+    #Para cada caso de alarma se crearan los output en html los cuales se encuentran guardados
+    #en las salidas de la función
   
     for (i in 1:length(alarmas) ) {
       # Need local so that each item gets its own number. Without it, the value
       # of i in the renderPlot() will be the same across all instances, because
       # of when the expression is evaluated.
+      
+      #Se crean las tablas 
       local({
         my_i <- i
         tablename <- paste("table_myt", my_i, sep="")
@@ -848,6 +840,7 @@ server <- function(input, output, session) {
         rownames = TRUE)
       })
       
+      #Se crea el mensaje de los culpables
       local({
         my_i <- i
         textname <- paste("text_myt", my_i, sep="")
@@ -863,6 +856,7 @@ server <- function(input, output, session) {
       
       
     }
+    #Se invocan los indices de las alarmas
     table_output_list_1 <-lapply(alarmas ,
              function(i) {
                obsname <- paste("obs_myt", i, sep="")
@@ -871,6 +865,7 @@ server <- function(input, output, session) {
                
              })
     
+    #Se invocan las tablas para cada alarma
     table_output_list_2 <-lapply(1:length( alarmas),
               function(k) {
                 tablename <- paste("table_myt", k, sep="")
@@ -879,7 +874,7 @@ server <- function(input, output, session) {
                 
               })
     
-    
+    #Se invocan los culpables para cada alarma
     
     table_output_list_3 <-lapply(1:length( alarmas) ,
              function(i) {
@@ -889,6 +884,9 @@ server <- function(input, output, session) {
 
              })
     
+    
+    #Se unen todas estás invocaciones de forma intercalada para tener el output deseado
+    #Además de que genera salidas acorde al número de alarmas encontrada
     big_list<-list()
     contador=1
     for(i in 1:length(alarmas)) {
@@ -902,7 +900,7 @@ server <- function(input, output, session) {
       contador=contador+1
     }
 
-
+    #Se envian los output al entorno html que lo requiere "table"
     do.call(tagList, big_list )
     
     }
