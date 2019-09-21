@@ -15,6 +15,7 @@ library(ggplot2)
 library(gtools)
 library(shinyWidgets)
 library(shinythemes)
+library(xtable)
 
 
 
@@ -168,7 +169,7 @@ ui <- fluidPage(theme = shinytheme("lumen"),
       plotOutput(outputId = "cartaT2"),
       #Resultados MYT
       textOutput("t1"),
-      uiOutput("table"),
+      uiOutput("table1"),
       #Resultados Murphy
       textOutput("t2"),
       uiOutput("table2"),
@@ -808,7 +809,7 @@ server <- function(input, output, session) {
 
   
   #Se crean los outputs de myt teniendo las funciones en una lista la salida de la función
-  output$table <- renderUI({
+  output$table1 <- renderUI({
     
     #Verifica para el caso de MYT
     if("MYT" %in% input$resultados){
@@ -826,6 +827,7 @@ server <- function(input, output, session) {
       # of when the expression is evaluated.
       
       #Se crean las tablas 
+      
       local({
         my_i <- i
         tablename <- paste("table_myt", my_i, sep="")
@@ -835,8 +837,8 @@ server <- function(input, output, session) {
           
           
           
-        },bordered = TRUE,  
-        width = '100%', align = 'c',  
+        },bordered = TRUE,  spacing="xs",
+        width = 'auto', align = 'c',  
         rownames = TRUE)
       })
       
@@ -908,90 +910,90 @@ server <- function(input, output, session) {
   
   
   #Se crean los outputs de myt teniendo las funciones en una lista la salida de la función
-  output$table <- renderUI({
-    
-    if("MYT" %in% input$resultados){
-      alarmas<-T2info(datos(), nuevos(), input$alpha1, input$alpha2)[[2]]$Señales 
-      lista_final<-MYT(nuevos(), datos(), alpha = input$alpha2)
-      
-      
-      for (i in 1:length(alarmas) ) {
-        # Need local so that each item gets its own number. Without it, the value
-        # of i in the renderPlot() will be the same across all instances, because
-        # of when the expression is evaluated.
-        local({
-          my_i <- i
-          tablename <- paste("table_myt", my_i, sep="")
-          
-          output[[tablename]] <- renderTable({
-            lista_final[[1]][[my_i]]
-            
-            
-            
-          },bordered = TRUE,  
-          width = '100%', align = 'c',  
-          rownames = TRUE)
-        })
-        
-        local({
-          my_i <- i
-          textname <- paste("text_myt", my_i, sep="")
-          
-          output[[textname]] <- renderPrint({
-            
-            
-            print(paste0("Las variables a las cuales se debe la alarma son: ",
-                         paste0(colnames(nuevos())[sort(lista_final[[2]][[my_i]])] ,collapse=",") ) )
-            
-          })
-        })
-        
-        
-      }
-      table_output_list_1 <-lapply(alarmas ,
-                                   function(i) {
-                                     obsname <- paste("obs_myt", i, sep="")
-                                     textOutput(obsname)
-                                     
-                                     
-                                   })
-      
-      table_output_list_2 <-lapply(1:length( alarmas),
-                                   function(k) {
-                                     tablename <- paste("table_myt", k, sep="")
-                                     tableOutput(tablename)
-                                     
-                                     
-                                   })
-      
-      
-      
-      table_output_list_3 <-lapply(1:length( alarmas) ,
-                                   function(i) {
-                                     textname <- paste("text_myt", i, sep="")
-                                     textOutput(textname)
-                                     
-                                     
-                                   })
-      
-      big_list<-list()
-      contador=1
-      for(i in 1:length(alarmas)) {
-        big_list[[contador]]<-table_output_list_1[[i]]
-        contador=contador+1
-        
-        big_list[[contador]]<-table_output_list_2[[i]]
-        contador=contador+1
-        
-        big_list[[contador]]<-table_output_list_3[[i]]
-        contador=contador+1
-      }
-      
-      
-      do.call(tagList, big_list )
-      
-    }
-  })#Final del render ui myt
+  # output$table <- renderUI({
+  #   
+  #   if("MYT" %in% input$resultados){
+  #     alarmas<-T2info(datos(), nuevos(), input$alpha1, input$alpha2)[[2]]$Señales 
+  #     lista_final<-MYT(nuevos(), datos(), alpha = input$alpha2)
+  #     
+  #     
+  #     for (i in 1:length(alarmas) ) {
+  #       # Need local so that each item gets its own number. Without it, the value
+  #       # of i in the renderPlot() will be the same across all instances, because
+  #       # of when the expression is evaluated.
+  #       local({
+  #         my_i <- i
+  #         tablename <- paste("table_myt", my_i, sep="")
+  #         
+  #         output[[tablename]] <- renderTable({
+  #           lista_final[[1]][[my_i]]
+  #           
+  #           
+  #           
+  #         },bordered = TRUE,  
+  #         width = '100%', align = 'c',  
+  #         rownames = TRUE)
+  #       })
+  #       
+  #       local({
+  #         my_i <- i
+  #         textname <- paste("text_myt", my_i, sep="")
+  #         
+  #         output[[textname]] <- renderPrint({
+  #           
+  #           
+  #           print(paste0("Las variables a las cuales se debe la alarma son: ",
+  #                        paste0(colnames(nuevos())[sort(lista_final[[2]][[my_i]])] ,collapse=",") ) )
+  #           
+  #         })
+  #       })
+  #       
+  #       
+  #     }
+  #     table_output_list_1 <-lapply(alarmas ,
+  #                                  function(i) {
+  #                                    obsname <- paste("obs_myt", i, sep="")
+  #                                    textOutput(obsname)
+  #                                    
+  #                                    
+  #                                  })
+  #     
+  #     table_output_list_2 <-lapply(1:length( alarmas),
+  #                                  function(k) {
+  #                                    tablename <- paste("table_myt", k, sep="")
+  #                                    tableOutput(tablename)
+  #                                    
+  #                                    
+  #                                  })
+  #     
+  #     
+  #     
+  #     table_output_list_3 <-lapply(1:length( alarmas) ,
+  #                                  function(i) {
+  #                                    textname <- paste("text_myt", i, sep="")
+  #                                    textOutput(textname)
+  #                                    
+  #                                    
+  #                                  })
+  #     
+  #     big_list<-list()
+  #     contador=1
+  #     for(i in 1:length(alarmas)) {
+  #       big_list[[contador]]<-table_output_list_1[[i]]
+  #       contador=contador+1
+  #       
+  #       big_list[[contador]]<-table_output_list_2[[i]]
+  #       contador=contador+1
+  #       
+  #       big_list[[contador]]<-table_output_list_3[[i]]
+  #       contador=contador+1
+  #     }
+  #     
+  #     
+  #     do.call(tagList, big_list )
+  #     
+  #   }
+  # })#Final del render ui myt
   
   
   
@@ -1021,8 +1023,8 @@ server <- function(input, output, session) {
             
             
             
-          },bordered = TRUE,  
-          width = '100%', align = 'c',  
+          },bordered = TRUE,  spacing="xs",
+          width = 'auto', align = 'c',  
           rownames = TRUE)
         })
         
@@ -1124,8 +1126,8 @@ server <- function(input, output, session) {
 
 
 
-          },bordered = TRUE,
-          width = '100%', align = 'c',
+          },bordered = TRUE, spacing="xs",
+          width = 'auto', align = 'c',
           rownames = TRUE)
         })
 
