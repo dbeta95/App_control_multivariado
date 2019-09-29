@@ -157,35 +157,55 @@ ui <- fluidPage(theme = shinytheme("slate"),
     
     # Salida de resultados
     mainPanel(
+      # Se genera una division de las ventanas para resultados y ficha tecnica
+      tabsetPanel(
+        # Se genera la ventana de analisis y resultados
+        tabPanel("Análisis",
+                 
       #Desplegiaga como están siendo leidos los datos en primera estancia
-      conditionalPanel("input.calcular==false",
-      tableOutput("contents1"),
-      tableOutput("contents2") 
-      ),#Final condicional 1
+                conditionalPanel("input.calcular==false",
+                tableOutput("contents1"),
+                tableOutput("contents2") 
+                ),#Final condicional 1
+                
+                
+                #Luego de una correcta lectura de datos, se aplican las funciones deseadas
+                conditionalPanel("input.calcular==true",
+                # Gráfico de la carta T2 datos históricos
+                plotOutput(outputId = "cartaT2"),
+                #Resultados MYT
+                htmlOutput("t1"),
+                uiOutput("table1"),
+                #Resultados Murphy
+                htmlOutput("t2"),
+                uiOutput("table2"),
+                #Resultados DFT
+                htmlOutput("t3"),
+                uiOutput("table3"),
+                # Resumen numérico HDS
+                htmlOutput("rhds"),
+                uiOutput("thds"),
+                # Resumen numérico HDS
+                htmlOutput("rnd"),
+                uiOutput("tnd")
+                )
+                # Final condicional 2
+                ),
+       
+      # Final de la primer ventana
+      tabPanel("Ficha Técnica",
+               tags$iframe(style = " height: 400px; width: 100%; scrolling = yes ",
+                           src="https://yyocampon.github.io/Resumen_segundo_parcial.pdf"
+                          )
+              ),
+      tabPanel("Referencia:",
+               tags$iframe(style = " height: 400px; width: 100%; scrolling = yes ",
+                           src="Bersimis_et_al-2017-Quality_and_Reliability_Engineering_International.pdf"
+               )
+               )
+        )
       
       
-      #Luego de una correcta lectura de datos, se aplican las funciones deseadas
-      conditionalPanel("input.calcular==true",
-      # Gráfico de la carta T2 datos históricos
-      plotOutput(outputId = "cartaT2"),
-      #Resultados MYT
-      htmlOutput("t1"),
-      uiOutput("table1"),
-      #Resultados Murphy
-      htmlOutput("t2"),
-      uiOutput("table2"),
-      #Resultados DFT
-      htmlOutput("t3"),
-      uiOutput("table3"),
-      # Resumen numérico HDS
-      htmlOutput("rhds"),
-      uiOutput("thds"),
-      # Resumen numérico HDS
-      htmlOutput("rnd"),
-      uiOutput("tnd")
-      
-      )#Final condicional 2
-    
       )#Final panel principal
     
   )#Final de disposición
